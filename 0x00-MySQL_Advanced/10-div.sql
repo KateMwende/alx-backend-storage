@@ -4,9 +4,9 @@
 DROP FUNCTION IF EXISTS SafeDiv;
 DELIMITER //
 
-CREATE FUNCTION SafeDiv(INT a, INT b)
+CREATE FUNCTION SafeDiv(a INT, B INT)
 BEGIN
-    IF (b == 0) THEN
+    IF (b = 0) THEN
         RETURN 0
     RETURN (a / b);
     END IF ;
