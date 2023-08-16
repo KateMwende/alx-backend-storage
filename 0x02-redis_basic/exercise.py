@@ -2,10 +2,21 @@
 """
 Module that creates redis classes and methods
 """
+from functools import wraps
 import redis
 import uuid
 from typing import Union, Callable
 
+
+def count_calls(method: Callable) -> Callable:
+    """Counts times cache is called"""
+    key = method.__qualname__
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        """wrap deco function and return wrapper"""
+        self._redis.incr(key)
+        return method(self, *args, **kwargs)
+    return wrapper
 
 class Cache:
     """creates class cache with instance of Redis client"""
@@ -14,6 +25,7 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb()
 
+    @count_calls
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """Generate a random key and stores it in Redis"""
         key = str(uuid.uuid4())
