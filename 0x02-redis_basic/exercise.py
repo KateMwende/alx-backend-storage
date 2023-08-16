@@ -11,12 +11,29 @@ from typing import Union, Callable
 def count_calls(method: Callable) -> Callable:
     """Counts times cache is called"""
     key = method.__qualname__
+
     @wraps(method)
     def wrapper(self, *args, **kwargs):
         """wrap deco function and return wrapper"""
         self._redis.incr(key)
         return method(self, *args, **kwargs)
     return wrapper
+
+
+def call_history(method: Callable) -> Callable:
+    """store the history of inputs and outputs"""
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        """wrap deco function and return wrapper"""
+        input = f"{method.__qualname__}:inputs"
+        output = f"{method.__qualname__}:outputs"
+
+        self._redis.rpush(input, str(args))
+        result = method(self, *args, **kwargs)
+        self._redis.rpush(output, str(result))
+        return result
+    return wrapper
+
 
 class Cache:
     """creates class cache with instance of Redis client"""
@@ -25,6 +42,7 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb()
 
+    @call_history
     @count_calls
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """Generate a random key and stores it in Redis"""
